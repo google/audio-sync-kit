@@ -386,6 +386,33 @@ The most relevant ones are:
 
 * `--help`: displays a help message listing all the available options.
 
+* `--plot_ascii_graph: plots the latencies in a ASCII art type of flow, like
+  ```
+  10:17:35 34:13 (2053) > +0839 ......... |
+  10:17:36 34:14 (2054) > +0929 ..........|
+  10:17:36 34:14 (2054) > +1111 ..........|**
+  10:17:36 34:14 (2054) > +0884 ......... |
+  10:17:37 34:15 (2055) > +0907 ..........|
+  10:17:37 34:15 (2055) > +1043 ..........|*
+  10:17:37 34:15 (2055) > +0816 ......... |
+  10:17:37 34:15 (2055) > +0884 ......... |
+     |       |     |        |     |
+     |       |     |        |     + dots proportional to latency value
+     |       |     |        |       '.' used below threshold
+     |       |     |        |       '|' is the threshold
+     |       |     |        |       '*' is used after the threshold
+     |       |     |        |           this typically means failure
+     |       |     |        + latency value
+     |       |     + counter
+     |       + relative time since start
+     + wallclock time (requires '--start_time')
+  ```
+* `--start_time`: time (format: <hh:mm:ss>) when playback started. This is used
+  in the ASCII plot to timestamp each latency. It can be used to correlate
+  specific latencies to occurances in the device log.
+
+* `--dots_per_usec`: how many ASCII dots are used per usec of latency.
+
 The program exits with code:
 
 * 0, if all the latencies are below 20 ms and no dropouts were detected,

@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import datetime
 import json
 import logging
 import math
@@ -34,6 +35,8 @@ EXIT_CODE_ARGS_PARSE_ERROR = 127
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_LATENCIES_ABOVE_THRESHOLD = 1
 EXIT_CODE_DROPOUTS_DETECTED = 2
+
+SECS_IN_MSEC = 1000000
 
 
 def ParseArgs(args):
@@ -74,6 +77,12 @@ def ParseArgs(args):
   parser.add_argument('--latency_threshold', type=float, default=0.001,
                       help=('Latencies equal or greater than this threshold '
                             'are considered excessive.'))
+  parser.add_argument('--plot_ascii_graph', default=False, action='store_true',
+                      help=('Plots all latencies as ASCII art.'))
+  parser.add_argument('--start_time', default='00:00:00',
+                      help=('hh:mm:ss of when playback started.'))
+  parser.add_argument('--dots_per_usec', type=float, default='0.01',
+                      help=('Dots per usecs in ASCI graph.'))
   return parser.parse_args(args)
 
 
@@ -126,6 +135,36 @@ def _PlotResults(
   print(output)
 
 
+def _PlotAsciiGraph(
+    latencies, start_time, dots_per_usec=0.01, latency_threshold_secs=0.001):
+  """Plots all latencies with timestamp in an ASCII timeline."""
+  thresh_in_dots = int(latency_threshold_secs * SECS_IN_MSEC * dots_per_usec)
+  for latency in latencies:
+    if math.isnan(latency[1]):
+      usecs = 9999.0
+    else:
+      usecs = SECS_IN_MSEC * latency[1]
+    dots_total = int(abs(usecs) * dots_per_usec)
+    dots_below_thresh = min(dots_total, thresh_in_dots)
+    filler_spaces_until_thresh = thresh_in_dots - dots_below_thresh
+    out_str = '.'*dots_below_thresh + ' '*filler_spaces_until_thresh + '|'
+    if dots_total > thresh_in_dots:
+      dots_above_thresh = dots_total - thresh_in_dots
+      out_str += '*'*dots_above_thresh
+    total_secs = int(latency[0])
+    time_h = (int)(total_secs / 60)
+    time_m = (int)(total_secs % 60)
+    t = datetime.timedelta(seconds=total_secs);
+    print((start_time + t).strftime('%H:%M:%S'),
+      '%2.2d:%2.2d (%4.4d) > %+4.4d %s' % (
+          time_h, time_m, total_secs, usecs, out_str))
+
+  values = [d for _, d in latencies if not math.isnan(d)]
+  if values:
+    avg = numpy.mean(values)
+    print("avg[%d]=%.6f" % (len(values), avg))
+
+
 def _PrintPercentiles(percentiles):
   """Prints the percentiles to standard output."""
   output = '\n'.join([
@@ -140,6 +179,18 @@ def _GetWaveDurationSecs(wav_path):
     return wav.getnframes() / (wav.getnchannels() * wav.getframerate())
   finally:
     wav.close()
+
+
+def _GetStartTime(start_time_str):
+  hh_mm_ss = start_time_str.split(':')
+  if len(hh_mm_ss) != 3:
+    print("--start_time is in the incorrect format!")
+    return None
+
+  return datetime.datetime(year=2018, month=1, day=1,
+                           hour=int(hh_mm_ss[0]),
+                           minute=int(hh_mm_ss[1]),
+                           second=int(hh_mm_ss[2]))
 
 
 def _Main(args):
@@ -164,10 +215,16 @@ def _Main(args):
     if args.parsable_output:
       _Print(json.dumps({'latencies': latencies, 'dropouts': dropouts}))
     else:
+      duration_secs = _GetWaveDurationSecs(args.ref_wav_path)
       if args.plot_timeline:
-        duration_secs = _GetWaveDurationSecs(args.ref_wav_path)
         _PlotResults(duration_secs, latencies, dropouts,
                      latency_threshold_secs=args.latency_threshold)
+      if args.plot_ascii_graph:
+        start_time = _GetStartTime(args.start_time)
+        if not start_time:
+          sys.exit(EXIT_CODE_ARGS_PARSE_ERROR)
+        _PlotAsciiGraph(latencies, start_time, dots_per_usec=args.dots_per_usec,
+                        latency_threshold_secs=args.latency_threshold)
       if args.print_percentiles:
         _PrintPercentiles(percentiles)
 
