@@ -200,18 +200,6 @@ def _GetWaveDurationSecs(wav_path):
     wav.close()
 
 
-def _GetStartTime(start_time_str):
-  hh_mm_ss = start_time_str.split(':')
-  if len(hh_mm_ss) != 3:
-    print("--start_time is in the incorrect format!")
-    return None
-
-  return datetime.datetime(year=2018, month=1, day=1,
-                           hour=int(hh_mm_ss[0]),
-                           minute=int(hh_mm_ss[1]),
-                           second=int(hh_mm_ss[2]))
-
-
 def _Main(args):
   """Parses options and shows results."""
   try:
