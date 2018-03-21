@@ -388,22 +388,22 @@ The most relevant ones are:
 
 * `--plot_ascii_graph: plots the latencies in a ASCII art type of flow, like
   ```
-  10:17:35 34:13 (2053) > +0839 ......... |
-  10:17:36 34:14 (2054) > +0929 ..........|
-  10:17:36 34:14 (2054) > +1111 ..........|**
-  10:17:36 34:14 (2054) > +0884 ......... |
-  10:17:37 34:15 (2055) > +0907 ..........|
-  10:17:37 34:15 (2055) > +1043 ..........|*
-  10:17:37 34:15 (2055) > +0816 ......... |
-  10:17:37 34:15 (2055) > +0884 ......... |
-     |       |     |        |     |
-     |       |     |        |     + dots proportional to latency value
-     |       |     |        |       '.' used below threshold
-     |       |     |        |       '|' is the threshold
-     |       |     |        |       '*' is used after the threshold
-     |       |     |        |           this typically means failure
-     |       |     |        + latency value
-     |       |     + counter
+  10:17:35 34:13 > +0839 ......... |
+  10:17:36 34:14 > +0929 ..........|
+  10:17:36 34:14 > +1111 ..........|**
+  10:17:36 34:14 > +0884 ......... |
+  10:17:37 34:15 > +0907 ..........|
+  10:17:37 34:15 > +1043 ..........|*
+  10:17:37 34:15 > +0816 ......... |
+  10:17:37 34:15 > +0884 ......... |
+     |       |       |     |
+     |       |       |     + dots proportional to abs(latency)
+     |       |       |       '.' used below threshold
+     |       |       |       ' ' used as filler until threshold
+     |       |       |       '|' is the threshold
+     |       |       |       '*' is used after the threshold
+     |       |       |           this typically means failure
+     |       |       + latency value
      |       + relative time since start
      + wallclock time (requires '--start_time')
   ```

@@ -36,7 +36,10 @@ EXIT_CODE_SUCCESS = 0
 EXIT_CODE_LATENCIES_ABOVE_THRESHOLD = 1
 EXIT_CODE_DROPOUTS_DETECTED = 2
 
-SECS_IN_MSEC = 1000000
+VERY_LARGE_LATENCY_USEC = 10000
+
+SECS_IN_MSEC = 1000
+SECS_IN_USEC = 1000000
 
 
 def ParseArgs(args):
@@ -81,8 +84,9 @@ def ParseArgs(args):
                       help=('Plots all latencies as ASCII art.'))
   parser.add_argument('--start_time', default='00:00:00',
                       help=('hh:mm:ss of when playback started.'))
-  parser.add_argument('--dots_per_usec', type=float, default='0.01',
-                      help=('Dots per usecs in ASCI graph.'))
+  parser.add_argument('--dots_per_msec', type=int, default='10',
+                      help=('How many ASCII dots are used per msec of '
+                        'latency.'))
   return parser.parse_args(args)
 
 
@@ -136,28 +140,43 @@ def _PlotResults(
 
 
 def _PlotAsciiGraph(
-    latencies, start_time, dots_per_usec=0.01, latency_threshold_secs=0.001):
-  """Plots all latencies with timestamp in an ASCII timeline."""
-  thresh_in_dots = int(latency_threshold_secs * SECS_IN_MSEC * dots_per_usec)
+    latencies, start_time, dots_per_msec=10, latency_threshold_secs=0.001):
+  """Plots all latencies with timestamp in an ASCII timeline.
+
+  Args:
+    latencies: (list) list of 2-tuples (<time>, <latency>).
+    start_time: (datetime) time the capture of the .wav files started.
+     dots_per_msec: (int) How many ASCII dots to use per msec of latency.
+     latency_threshold_secs: (float) latencies equal or greater than this
+         threshold are considered excessive and are marked with a '*'.
+  """
+  if dots_per_msec < 0:
+    raise ValueError('Invalid dots_per_msec %d.' % dots_per_msec)
+
+  if latency_threshold_secs < 0:
+    raise ValueError('Invalid latency_threshold_secs %d.' % (
+      latency_threshold_secs))
+
+  threshold_in_dots = int(latency_threshold_secs * SECS_IN_MSEC * dots_per_msec)
   for latency in latencies:
     if math.isnan(latency[1]):
-      usecs = 9999.0
+      usecs = VERY_LARGE_LATENCY_USEC
     else:
-      usecs = SECS_IN_MSEC * latency[1]
-    dots_total = int(abs(usecs) * dots_per_usec)
-    dots_below_thresh = min(dots_total, thresh_in_dots)
-    filler_spaces_until_thresh = thresh_in_dots - dots_below_thresh
-    out_str = '.'*dots_below_thresh + ' '*filler_spaces_until_thresh + '|'
-    if dots_total > thresh_in_dots:
-      dots_above_thresh = dots_total - thresh_in_dots
-      out_str += '*'*dots_above_thresh
+      usecs = SECS_IN_USEC * latency[1]
+    msecs = usecs / 1000
+    dots_total = int(abs(msecs) * dots_per_msec)
+    dots_below_threshold = min(dots_total, threshold_in_dots)
+    filler_spaces_until_thresh = threshold_in_dots - dots_below_threshold
+    out_str = '.'*dots_below_threshold + ' '*filler_spaces_until_thresh + '|'
+    if dots_total > threshold_in_dots:
+      dots_above_thresh = dots_total - threshold_in_dots
+      out_str += '*' * dots_above_thresh
     total_secs = int(latency[0])
     time_h = (int)(total_secs / 60)
     time_m = (int)(total_secs % 60)
-    t = datetime.timedelta(seconds=total_secs);
+    t = datetime.timedelta(seconds=total_secs)
     print((start_time + t).strftime('%H:%M:%S'),
-      '%2.2d:%2.2d (%4.4d) > %+4.4d %s' % (
-          time_h, time_m, total_secs, usecs, out_str))
+      '%2.2d:%2.2d > %+4.4d %s' % (time_h, time_m, usecs, out_str))
 
   values = [d for _, d in latencies if not math.isnan(d)]
   if values:
@@ -220,10 +239,11 @@ def _Main(args):
         _PlotResults(duration_secs, latencies, dropouts,
                      latency_threshold_secs=args.latency_threshold)
       if args.plot_ascii_graph:
-        start_time = _GetStartTime(args.start_time)
-        if not start_time:
+        try:
+          start_time = datetime.datetime.strptime(args.start_time, "%H:%M:%S")
+        except ValueError:
           sys.exit(EXIT_CODE_ARGS_PARSE_ERROR)
-        _PlotAsciiGraph(latencies, start_time, dots_per_usec=args.dots_per_usec,
+        _PlotAsciiGraph(latencies, start_time, dots_per_msec=args.dots_per_msec,
                         latency_threshold_secs=args.latency_threshold)
       if args.print_percentiles:
         _PrintPercentiles(percentiles)
