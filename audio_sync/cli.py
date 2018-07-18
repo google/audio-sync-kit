@@ -71,7 +71,7 @@ def ParseArgs(args):
                       help='Print latency percentiles.')
   parser.add_argument('--plot_timeline', default=False, action='store_true',
                       help=('Plot the conditions in a timeline.'))
-  parser.add_argument('--latency_threshold', type=float, default=0.02,
+  parser.add_argument('--latency_threshold', type=float, default=0.001,
                       help=('Latencies equal or greater than this threshold '
                             'are considered excessive.'))
   return parser.parse_args(args)
@@ -104,7 +104,7 @@ def _Print(message):
 
 def _PlotResults(
     duration_secs, latencies, dropouts, num_ticks=5, num_dots=70,
-    latency_threshold_secs=0.02):
+    latency_threshold_secs=0.001):
   """Plots the results in a text timeline."""
   duration_secs = float(duration_secs)
 
