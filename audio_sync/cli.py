@@ -181,7 +181,7 @@ def _PlotAsciiGraph(
   values = [d for _, d in latencies if not math.isnan(d)]
   if values:
     avg = numpy.mean(values)
-    print("avg[%d]=%.6f" % (len(values), avg))
+    print("\navg[%d]=%.6f\n" % (len(values), avg))
 
 
 def _PrintPercentiles(percentiles):
@@ -222,10 +222,6 @@ def _Main(args):
     if args.parsable_output:
       _Print(json.dumps({'latencies': latencies, 'dropouts': dropouts}))
     else:
-      duration_secs = _GetWaveDurationSecs(args.ref_wav_path)
-      if args.plot_timeline:
-        _PlotResults(duration_secs, latencies, dropouts,
-                     latency_threshold_secs=args.latency_threshold)
       if args.plot_ascii_graph:
         try:
           start_time = datetime.datetime.strptime(args.start_time, "%H:%M:%S")
@@ -233,6 +229,10 @@ def _Main(args):
           sys.exit(EXIT_CODE_ARGS_PARSE_ERROR)
         _PlotAsciiGraph(latencies, start_time, dots_per_msec=args.dots_per_msec,
                         latency_threshold_secs=args.latency_threshold)
+      duration_secs = _GetWaveDurationSecs(args.ref_wav_path)
+      if args.plot_timeline:
+        _PlotResults(duration_secs, latencies, dropouts,
+                     latency_threshold_secs=args.latency_threshold)
       if args.print_percentiles:
         _PrintPercentiles(percentiles)
 
