@@ -244,7 +244,6 @@ def _Main(args):
     latencies, dropouts = audio_sync.AnalyzeAudios(
         args.ref_wav_path, args.act_wav_path, settings)
     max_latency, min_latency, avg_latency = GetStats(latencies)
-    percentiles = CalculatePercentiles(latencies)
 
     if args.parsable_output:
       _Print(json.dumps({'latencies': latencies, 'dropouts': dropouts}))
@@ -265,6 +264,7 @@ def _Main(args):
         _Print('Min latency: %f secs' % min_latency)
         _Print('Mean latency: %f secs\n' % avg_latency)
       if args.print_percentiles:
+        percentiles = CalculatePercentiles(latencies)
         _PrintPercentiles(percentiles)
 
     if abs(max_latency) >= args.latency_threshold:
