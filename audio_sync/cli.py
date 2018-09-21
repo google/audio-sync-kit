@@ -73,6 +73,8 @@ def ParseArgs(args):
                             'below this duration will be ignored.'))
   parser.add_argument('--parsable_output', default=False, action='store_true',
                       help='Print latencies and dropouts as a JSON string.')
+  parser.add_argument('--print_stats', default=False, action='store_true',
+                      help='Print latencies stats (max, min, and average).')
   parser.add_argument('--print_percentiles', default=False, action='store_true',
                       help='Print latency percentiles.')
   parser.add_argument('--plot_timeline', default=False, action='store_true',
@@ -88,6 +90,31 @@ def ParseArgs(args):
                       help=('How many ASCII dots are used per msec of '
                         'latency.'))
   return parser.parse_args(args)
+
+
+def GetStats(latencies):
+  """Gets latency stats.
+
+  Args:
+    latencies: (list) list of 2-tuples (<time>, <latency>).
+
+  Returns:
+    A 3-tuple:
+      Element 1: (float) max latency in seconds.
+      Element 2: (float) min latency in seconds.
+      Element 3: (float) mean latency in seconds.
+  """
+  values = [d for _, d in latencies if not math.isnan(d)]
+  if values:
+    # The max, min, and avg should be based on absolute values (otherwise,
+    # we could report that -0.1 is greater than -0.2, which is misleading),
+    # but we still need to show the signed value so users can tell if the
+    # signal was ahead or behind.
+    return (max(values, key=abs),
+            min(values, key=abs),
+            numpy.mean(values))
+  else:
+    return float('NaN'), float('NaN'), float('NaN')
 
 
 def CalculatePercentiles(latencies, percentiles=(0, 50, 75, 90, 95, 99, 100)):
@@ -216,8 +243,7 @@ def _Main(args):
         args.silence_threshold, args.min_silence_length)
     latencies, dropouts = audio_sync.AnalyzeAudios(
         args.ref_wav_path, args.act_wav_path, settings)
-    percentiles = CalculatePercentiles(latencies)
-    max_latency = percentiles[-1][1]
+    max_latency, min_latency, avg_latency = GetStats(latencies)
 
     if args.parsable_output:
       _Print(json.dumps({'latencies': latencies, 'dropouts': dropouts}))
@@ -233,7 +259,12 @@ def _Main(args):
       if args.plot_timeline:
         _PlotResults(duration_secs, latencies, dropouts,
                      latency_threshold_secs=args.latency_threshold)
+      if args.print_stats:
+        _Print('Max latency: %f secs' % max_latency)
+        _Print('Min latency: %f secs' % min_latency)
+        _Print('Mean latency: %f secs\n' % avg_latency)
       if args.print_percentiles:
+        percentiles = CalculatePercentiles(latencies)
         _PrintPercentiles(percentiles)
 
     if abs(max_latency) >= args.latency_threshold:
