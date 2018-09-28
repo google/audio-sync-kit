@@ -381,7 +381,7 @@ The most relevant ones are:
 
 * `--print_percentiles`: prints the latencies percentiles.
 
-* `--latency_threshold`: latencies equal or greater than this threshold
+* `--latency_threshold`: latencies equal or greater than this threshold (secs)
   are considered excessive.
 
 * `--help`: displays a help message listing all the available options.

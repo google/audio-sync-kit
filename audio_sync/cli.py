@@ -81,7 +81,7 @@ def ParseArgs(args):
                       help=('Plot the conditions in a timeline.'))
   parser.add_argument('--latency_threshold', type=float, default=0.001,
                       help=('Latencies equal or greater than this threshold '
-                            'are considered excessive.'))
+                            '(secs) are considered excessive.'))
   parser.add_argument('--plot_ascii_graph', default=False, action='store_true',
                       help=('Plots all latencies as ASCII art.'))
   parser.add_argument('--start_time', default='00:00:00',
